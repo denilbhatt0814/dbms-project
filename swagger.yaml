@@ -1,0 +1,103 @@
+openapi: 3.0.0
+info:
+  title: Customer API
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+paths:
+  /customers:
+    get:
+      summary: Get all customers
+      tags:
+        - Customers
+      responses:
+        200:
+          description: An array of customers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customers:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Customer"
+
+        500:
+          description: Error fetching customers
+
+  /customers/{id}:
+    get:
+      summary: Get a single customer by ID
+      tags:
+        - Customers
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: Customer ID
+      responses:
+        200:
+          description: Customer data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customer:
+                    $ref: "#/components/schemas/Customer"
+
+        404:
+          description: No customer found with the specified ID
+
+        500:
+          description: Error fetching customer data
+
+  /customers/{id}/favorite-category:
+    get:
+      summary: Get the favorite category of a customer by ID
+      tags:
+        - Customers
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: Customer ID
+      responses:
+        200:
+          description: Customer's favorite category
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  category:
+                    type: string
+
+        500:
+          description: Error fetching the customer's favorite category
+
+components:
+  schemas:
+    Customer:
+      type: object
+      properties:
+        customer_id:
+          type: integer
+          description: Unique identifier for the customer
+        first_name:
+          type: string
+          description: Customer's first name
+        last_name:
+          type: string
+          description: Customer's last name
+        email:
+          type: string
+          description: Customer's email address
+        phone:
+          type: string
+          description: Customer's phone number
