@@ -32,6 +32,24 @@ exports.getConnection = async () => {
 };
 
 // ------------ CUSTOMER ----------------
+exports.createCustomer = async (customerData) => {
+  const { first_name, last_name, email, phone } = customerData;
+
+  const query = `
+    INSERT INTO Customer (first_name, last_name, email, phone)
+    VALUES (?, ?, ?, ?)
+  `;
+
+  const [result] = await connection.query(query, [
+    first_name,
+    last_name,
+    email,
+    phone,
+  ]);
+  const newCustomerId = result.insertId;
+  return { customer_id: newCustomerId, first_name, last_name, email, phone };
+};
+
 exports.getAllCustomers = async () => {
   try {
     const query = "SELECT * FROM Customer";
@@ -73,9 +91,43 @@ exports.getFavouriveCategoryOfOneCustomer = async (id) => {
 
 //--------------- Bills ----------------
 
+exports.getAllBills = async () => {
+  const query = `SELECT * FROM Bill`;
+  const [bills] = await connection.query(query);
+
+  if (bills.length == 0) return null;
+
+  for (let i = 0; i < bills.length; i++) {
+    const bill = bills[i];
+    const query =
+      "SELECT P.product_id, P.product_name FROM Bill_Product BP JOIN Product P ON P.product_id = BP.product_id WHERE BP.bill_id = ?";
+    const [products] = await connection.query(query, [bill.bill_id]);
+    bills[i].products = products;
+  }
+
+  return bills;
+};
+
+exports.getBillById = async (id) => {
+  let query = `SELECT * FROM Bill WHERE bill_id= ?`;
+  const [bills] = await connection.query(query, [id]);
+
+  if (bills.length == 0) return null;
+
+  let bill = bills[0];
+  query =
+    "SELECT P.product_id, P.product_name FROM Bill_Product BP JOIN Product P ON P.product_id = BP.product_id WHERE BP.bill_id = ?";
+  const [products] = await connection.query(query, [bill.bill_id]);
+  bill.products = products;
+
+  return bill;
+};
+
 exports.getBillsOfOneCustomer = async (id) => {
   const query = `SELECT * FROM Bill WHERE customer_id= ?`;
   const [bills] = await connection.query(query, [id]);
+
+  if (bills.length == 0) return null;
 
   for (let i = 0; i < bills.length; i++) {
     const bill = bills[i];
@@ -96,11 +148,49 @@ exports.getAvgBillSpendOfOneCustomer = async (id) => {
 
 //-------------- Products ----------------
 
+exports.createProduct = async (productData) => {
+  const {
+    category_id,
+    supplier_id,
+    product_name,
+    quantity,
+    retail_price,
+    cost_price,
+    description,
+  } = productData;
+
+  const query = `
+    INSERT INTO Product (category_id, supplier_id, product_name, quantity, retail_price, cost_price, description)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  const [result] = await connection.query(query, [
+    category_id,
+    supplier_id,
+    product_name,
+    quantity,
+    retail_price,
+    cost_price,
+    description,
+  ]);
+  const newProductId = result.insertId;
+  return {
+    product_id: newProductId,
+    category_id,
+    supplier_id,
+    product_name,
+    quantity,
+    retail_price,
+    cost_price,
+    description,
+  };
+};
+
 exports.getAllProduct = async () => {
   try {
     const query = `SELECT * FROM Product`;
-    const [product] = await connection.query(query);
-    return product;
+    const [products] = await connection.query(query);
+    return products;
   } catch (error) {
     throw error;
   }
@@ -120,11 +210,35 @@ exports.getOneProductById = async (id) => {
 
 // --------------- Suppliers --------------
 
-exports.getAllSupplier = async () => {
+exports.createSupplier = async (supplierData) => {
+  const { company_name, contact_name, email, phone } = supplierData;
+
+  const query = `
+    INSERT INTO Supplier (company_name, contact_name, email, phone)
+    VALUES (?, ?, ?, ?)
+  `;
+
+  const [result] = await connection.query(query, [
+    company_name,
+    contact_name,
+    email,
+    phone,
+  ]);
+  const newSupplierId = result.insertId;
+  return {
+    supplier_id: newSupplierId,
+    company_name,
+    contact_name,
+    email,
+    phone,
+  };
+};
+
+exports.getAllSuppliers = async () => {
   try {
-    const query = `SELECT * FROM supplier` ;
-    const [product] = await connection.query(query);
-    return product;
+    const query = `SELECT * FROM Supplier`;
+    const [suppliers] = await connection.query(query);
+    return suppliers;
   } catch (error) {
     throw error;
   }
@@ -132,7 +246,7 @@ exports.getAllSupplier = async () => {
 
 exports.getOneSupplierById = async (id) => {
   try {
-    const query = `SELECT * FROM supplier WHERE supplier_id= ? `;
+    const query = `SELECT * FROM Supplier WHERE supplier_id= ? `;
     const [rows] = await connection.query(query, [id]);
 
     if (rows.length > 0) return rows[0];

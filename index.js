@@ -2,7 +2,7 @@ const express = require("express");
 const db = require("./database");
 const swaggerUi = require("swagger-ui-express");
 const YAML = require("yamljs");
-const swaggerDocument = YAML.load("./swagger.yaml");
+const swaggerDocument = YAML.load("./swagger-2.yaml");
 const cors = require("cors");
 
 const app = express();
