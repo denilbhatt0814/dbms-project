@@ -35,8 +35,8 @@ exports.getConnection = async () => {
 exports.getAllCustomers = async () => {
   try {
     const query = "SELECT * FROM Customer";
-    const [customers] = await connection.query(query);
-    return customers;
+    const [customer] = await connection.query(query);
+    return customer;
   } catch (error) {
     throw error;
   }
@@ -52,21 +52,6 @@ exports.getOneCustomerById = async (id) => {
   } catch (error) {
     throw error;
   }
-};
-
-exports.getBillsOfOneCustomer = async (id) => {
-  const query = `SELECT * FROM Bill WHERE customer_id= ?`;
-  const [bills] = await connection.query(query, [id]);
-
-  for (let i = 0; i < bills.length; i++) {
-    const bill = bills[i];
-    const query =
-      "SELECT P.product_id, P.product_name FROM Bill_Product BP JOIN Product P ON P.product_id = BP.product_id WHERE BP.bill_id = ?";
-    const [products] = await connection.query(query, [bill.bill_id]);
-    bills[i].products = products;
-  }
-
-  return bills;
 };
 
 exports.getFavouriveCategoryOfOneCustomer = async (id) => {
@@ -86,8 +71,73 @@ exports.getFavouriveCategoryOfOneCustomer = async (id) => {
   else return null;
 };
 
+//--------------- Bills ----------------
+
+exports.getBillsOfOneCustomer = async (id) => {
+  const query = `SELECT * FROM Bill WHERE customer_id= ?`;
+  const [bills] = await connection.query(query, [id]);
+
+  for (let i = 0; i < bills.length; i++) {
+    const bill = bills[i];
+    const query =
+      "SELECT P.product_id, P.product_name FROM Bill_Product BP JOIN Product P ON P.product_id = BP.product_id WHERE BP.bill_id = ?";
+    const [products] = await connection.query(query, [bill.bill_id]);
+    bills[i].products = products;
+  }
+
+  return bills;
+};
+
 exports.getAvgBillSpendOfOneCustomer = async (id) => {
   const query = `SELECT AVG(total_amount) AS avg_bill FROM Bill WHERE customer_id = ?`;
   const [avg_bill] = await connection.query(query, [id]);
   return avg_bill[0];
+};
+
+//-------------- Products ----------------
+
+exports.getAllProduct = async () => {
+  try {
+    const query = `SELECT * FROM Product`;
+    const [product] = await connection.query(query);
+    return product;
+  } catch (error) {
+    throw error;
+  }
+};
+
+exports.getOneProductById = async (id) => {
+  try {
+    const query = `SELECT * FROM Product WHERE product_id= ?`;
+    const [rows] = await connection.query(query, [id]);
+
+    if (rows.length > 0) return rows[0];
+    else return null;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// --------------- Suppliers --------------
+
+exports.getAllSupplier = async () => {
+  try {
+    const query = `SELECT * FROM supplier` ;
+    const [product] = await connection.query(query);
+    return product;
+  } catch (error) {
+    throw error;
+  }
+};
+
+exports.getOneSupplierById = async (id) => {
+  try {
+    const query = `SELECT * FROM supplier WHERE supplier_id= ? `;
+    const [rows] = await connection.query(query, [id]);
+
+    if (rows.length > 0) return rows[0];
+    else return null;
+  } catch (error) {
+    throw error;
+  }
 };

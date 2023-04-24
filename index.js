@@ -18,6 +18,18 @@ async function main() {
   const customerRouter = require("./routes/customer");
   app.use("/", customerRouter);
 
+  // BILL ROUTER
+  const billRouter = require("./routes/bill");
+  app.use("/", billRouter);
+
+  // PRODUCT ROUTER
+  const prodRouter = require("./routes/product");
+  app.use("/", prodRouter);
+
+  // SUPPLIER ROUTER
+  const supplierRouter = require("./routes/supplier");
+  app.use("/", supplierRouter);
+
   app.listen(port, () => {
     console.log(`Listening at port at http://localhost:${port}`);
   });

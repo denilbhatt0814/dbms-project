@@ -1,10 +1,10 @@
-const experss = require("express");
+const express = require("express");
 const {
   getAllCustomers,
   getOneCustomerById,
   getFavouriveCategoryOfOneCustomer,
 } = require("../database");
-const router = experss.Router();
+const router = express.Router();
 
 router.get("/customers", async (req, res) => {
   try {
