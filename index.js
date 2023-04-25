@@ -26,6 +26,10 @@ async function main() {
   const prodRouter = require("./routes/product");
   app.use("/", prodRouter);
 
+  // EMPLOYEE ROUTER
+  const employeeRouter = require("./routes/employee");
+  app.use("/", employeeRouter);
+
   // SUPPLIER ROUTER
   const supplierRouter = require("./routes/supplier");
   app.use("/", supplierRouter);

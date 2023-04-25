@@ -1,9 +1,9 @@
 const express = require("express");
 const {
-  getBillsOfOneCustomer,
-  getAvgBillSpendOfOneCustomer,
   getAllBills,
   getBillById,
+  generateBill,
+  getEmployeeById,
 } = require("../database");
 const router = express.Router();
 
@@ -27,6 +27,32 @@ router.get("/bill/:id", async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).send("Error fetching Bill");
+  }
+});
+
+router.post("/bill/generate", async (req, res) => {
+  try {
+    const { customerID, employeeID, productQuantities } = req.body;
+
+    // Check if employee allowed to generate bill
+    const employee = await getEmployeeById(employeeID);
+    if (
+      !employee ||
+      (employee.position != "Cashier" && employee.position != "Manager")
+    ) {
+      return res
+        .status(403)
+        .send(
+          `Employee id ${employeeID} is not allowed to generate Bills. (Allowed: Cashier | Manager)`
+        );
+    }
+
+    const bill = await generateBill(customerID, employeeID, productQuantities);
+
+    res.status(201).json({ bill });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Error generating bill");
   }
 });
 

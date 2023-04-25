@@ -211,6 +211,59 @@ paths:
         500:
           description: Error fetching bill
 
+  /bill/generate:
+    post:
+      summary: Generate a bill for a customer
+      description: Create a new bill for a customer with a given product ID and quantity mapping
+      tags:
+        - Bills
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                employeeID:
+                  type: integer
+                  description: The employee ID (Cashier | Manager)
+                customerID:
+                  type: integer
+                  description: The customer ID
+                productQuantities:
+                  type: object
+                  additionalProperties:
+                    type: integer
+                  description: The mapping of product IDs to quantities
+              required:
+                - customerID
+                - productQuantities
+        required: true
+      responses:
+        201:
+          description: The created bill
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bill"
+        403:
+          description: Employee not allowed to generate bill
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        500:
+          description: Error generating bill
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+
   /product:
     get:
       summary: Get all products
@@ -241,6 +294,8 @@ paths:
             schema:
               type: object
               properties:
+                employee_id:
+                  type: integer
                 category_id:
                   type: integer
                 supplier_id:
@@ -300,6 +355,131 @@ paths:
                     $ref: "#/components/schemas/Product"
         500:
           description: Error fetching product
+
+  /product/{id}/stock:
+    put:
+      summary: Update the stock of a product
+      description: Increment the stock quantity for a product. (Allowed - Stock Clerk | Manager)
+      tags:
+        - Products
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: The product ID
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                employeeID:
+                  type: integer
+                  description: The employee ID (Stock Clerk | Manager)
+                stockToAdd:
+                  type: integer
+                  description: The quantity to add to the stock
+              required:
+                - employeeID
+                - stockToAdd
+        required: true
+      responses:
+        200:
+          description: The updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        500:
+          description: Error updating product stock
+
+  /employees:
+    get:
+      summary: Fetch all employees
+      description: Returns a list of all employees in the database.
+      operationId: getAllEmployees
+      tags:
+        - Employees
+      responses:
+        200:
+          description: A list of employees
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  employees:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Employee"
+        500:
+          description: Error fetching employees
+    post:
+      summary: Add a new employee
+      description: Create a new employee in the database.
+      operationId: addNewEmployee
+      tags:
+        - Employees
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                phone:
+                  type: string
+                position:
+                  type: string
+              required:
+                - first_name
+                - last_name
+                - email
+                - phone
+                - position
+      responses:
+        "201":
+          description: Employee created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Employee"
+        "500":
+          description: Error adding employee
+  /employees/{id}:
+    get:
+      summary: Fetch employee by ID
+      description: Returns the employee with the specified ID.
+      operationId: getEmployeeById
+      tags:
+        - Employees
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: Numeric ID of the employee to fetch.
+      responses:
+        200:
+          description: Employee data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Employee"
+        404:
+          description: Employee not found
+        500:
+          description: Error fetching employee data
 
   /suppliers:
     get:
@@ -428,6 +608,35 @@ components:
           format: float
         description:
           type: string
+    Employee:
+      type: object
+      properties:
+        employee_id:
+          type: integer
+          description: The unique identifier of the employee.
+        first_name:
+          type: string
+          description: The first name of the employee.
+        last_name:
+          type: string
+          description: The last name of the employee.
+        email:
+          type: string
+          format: email
+          description: The email address of the employee.
+        phone:
+          type: string
+          description: The phone number of the employee.
+        position:
+          type: string
+          description: The position of the employee.
+      required:
+        - employee_id
+        - first_name
+        - last_name
+        - email
+        - phone
+        - position
     Supplier:
       type: object
       properties:

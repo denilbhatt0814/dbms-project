@@ -100,7 +100,7 @@ exports.getAllBills = async () => {
   for (let i = 0; i < bills.length; i++) {
     const bill = bills[i];
     const query =
-      "SELECT P.product_id, P.product_name FROM Bill_Product BP JOIN Product P ON P.product_id = BP.product_id WHERE BP.bill_id = ?";
+      "SELECT P.product_id, P.product_name, BP.quantity, P.retail_price FROM Bill_Product BP JOIN Product P ON P.product_id = BP.product_id WHERE BP.bill_id = ?";
     const [products] = await connection.query(query, [bill.bill_id]);
     bills[i].products = products;
   }
@@ -116,7 +116,7 @@ exports.getBillById = async (id) => {
 
   let bill = bills[0];
   query =
-    "SELECT P.product_id, P.product_name FROM Bill_Product BP JOIN Product P ON P.product_id = BP.product_id WHERE BP.bill_id = ?";
+    "SELECT P.product_id, P.product_name, BP.quantity, P.retail_price FROM Bill_Product BP JOIN Product P ON P.product_id = BP.product_id WHERE BP.bill_id = ?";
   const [products] = await connection.query(query, [bill.bill_id]);
   bill.products = products;
 
@@ -132,7 +132,7 @@ exports.getBillsOfOneCustomer = async (id) => {
   for (let i = 0; i < bills.length; i++) {
     const bill = bills[i];
     const query =
-      "SELECT P.product_id, P.product_name FROM Bill_Product BP JOIN Product P ON P.product_id = BP.product_id WHERE BP.bill_id = ?";
+      "SELECT P.product_id, P.product_name, BP.quantity, P.retail_price FROM Bill_Product BP JOIN Product P ON P.product_id = BP.product_id WHERE BP.bill_id = ?";
     const [products] = await connection.query(query, [bill.bill_id]);
     bills[i].products = products;
   }
@@ -145,6 +145,77 @@ exports.getAvgBillSpendOfOneCustomer = async (id) => {
   const [avg_bill] = await connection.query(query, [id]);
   return avg_bill[0];
 };
+
+exports.generateBill = async (customerID, employeeID, productQuantities) => {
+  try {
+    await connection.beginTransaction();
+
+    const billTotal = await calculateBillTotal(productQuantities);
+
+    const date = new Date();
+
+    const [billResult] = await connection.query(
+      "INSERT INTO Bill (employee_id, customer_id, total_amount, date) VALUES (?, ?, ?, ?)",
+      [employeeID, customerID, billTotal, date]
+    );
+
+    const billID = billResult.insertId;
+
+    await addProductsToBill(billID, productQuantities);
+
+    await connection.commit();
+
+    const bill = await this.getBillById(billID);
+
+    return bill;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  }
+};
+
+async function calculateBillTotal(productQuantities) {
+  let total = 0;
+
+  for (const productID in productQuantities) {
+    const quantity = productQuantities[productID];
+
+    const [products] = await connection.query(
+      "SELECT * FROM Product WHERE product_id = ?",
+      [productID]
+    );
+
+    const product = products[0];
+
+    if (!product) {
+      throw new Error(`Product not found with id ${productID}`);
+    }
+
+    if (product.quantity - quantity < 0) {
+      throw new Error(`Insufficient stock for product id ${productID}`);
+    }
+
+    total += product.retail_price * quantity;
+  }
+
+  return total;
+}
+
+async function addProductsToBill(billID, productQuantities) {
+  for (const productID in productQuantities) {
+    const quantity = productQuantities[productID];
+
+    await connection.query(
+      "INSERT INTO Bill_Product (bill_id, product_id, quantity) VALUES (?, ?, ?)",
+      [billID, productID, quantity]
+    );
+
+    await connection.query(
+      "UPDATE Product SET quantity = quantity - ? WHERE product_id = ?",
+      [quantity, productID]
+    );
+  }
+}
 
 //-------------- Products ----------------
 
@@ -208,6 +279,31 @@ exports.getOneProductById = async (id) => {
   }
 };
 
+exports.updateProductStock = async (productID, stockToAdd) => {
+  try {
+    const [products] = await connection.query(
+      "SELECT * FROM Product WHERE product_id = ?",
+      [productID]
+    );
+    const product = products[0];
+
+    if (!product) {
+      throw new Error(`Product not found with id ${productID}`);
+    }
+
+    const updatedStock = parseInt(product.quantity) + stockToAdd;
+
+    await connection.query(
+      "UPDATE Product SET quantity = ? WHERE product_id = ?",
+      [updatedStock, productID]
+    );
+
+    return { ...product, quantity: updatedStock };
+  } catch (error) {
+    throw error;
+  }
+};
+
 // --------------- Suppliers --------------
 
 exports.createSupplier = async (supplierData) => {
@@ -251,6 +347,52 @@ exports.getOneSupplierById = async (id) => {
 
     if (rows.length > 0) return rows[0];
     else return null;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// ------------ EMPLOYEE ----------------
+exports.getAllEmployees = async () => {
+  try {
+    const query = "SELECT * FROM Employee";
+    const [employees] = await connection.query(query);
+    return employees;
+  } catch (error) {
+    console.error("Error fetching all employees: ", error);
+    throw error;
+  }
+};
+
+exports.getEmployeeById = async (employeeID) => {
+  try {
+    const query = "SELECT * FROM Employee WHERE employee_id = ?";
+    const [employees] = await connection.query(query, [employeeID]);
+    if (employees.length > 0) return employees[0];
+    else return null;
+  } catch (error) {
+    console.error("Error fetching employee by ID: ", error);
+    throw error;
+  }
+};
+
+exports.addNewEmployee = async (employeeData) => {
+  try {
+    const query = `
+      INSERT INTO Employee (first_name, last_name, email, phone, position)
+      VALUES (?, ?, ?, ?, ?)
+      `;
+    const [result] = await connection.query(query, [
+      employeeData.first_name,
+      employeeData.last_name,
+      employeeData.email,
+      employeeData.phone,
+      employeeData.position,
+    ]);
+
+    const newEmployee = await this.getEmployeeById(result.insertId);
+
+    return newEmployee;
   } catch (error) {
     throw error;
   }
