@@ -1,15 +1,14 @@
 const mysql = require("mysql2/promise");
-
+const dotenv = require('dotenv').config();
 let connection;
-
 exports.connectMySQL = async () => {
   try {
     connection = await mysql.createConnection({
       user: "root",
-      password: "your_password",
-      host: "172.17.0.2",
+      password: process.env.DB_PASSWORD,
+      host: process.env.DB_HOST,
       port: 3306,
-      database: "dbms_project",
+      database: "dbmsproject",
     });
     console.log("Connected MySQL!");
   } catch (error) {
@@ -32,6 +31,7 @@ exports.getConnection = async () => {
 };
 
 // ------------ CUSTOMER ----------------
+
 exports.createCustomer = async (customerData) => {
   const { first_name, last_name, email, phone } = customerData;
 
